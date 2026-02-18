@@ -35,8 +35,11 @@ LexiScan/
 ## 🚀 Tech Stack
 
 -**Language**: Python 3.12+
+
 -**OCR Engine**: Tesseract OCR
+
 -**PDF Converter**: Poppler
+
 -**Key Libraries**: pytesseract, pdf2image, json
 
 ---
@@ -60,7 +63,11 @@ pip install -r requirements.txt
 ---
 
 ## 📅 Roadmap
+
 -**[✅] Week 1**: OCR Pipeline & Data Extraction.
+
 -**[ ] Week 2**: Training a Custom Named Entity Recognition (NER) model using SpaCy/HuggingFace.
+
 -**[ ] Week 3**: Heuristic Validation & Accuracy Benchmarking.
+
 -**[ ] Week 4**: Deployment and API Integration.
