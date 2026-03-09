@@ -1,98 +1,234 @@
-<div align="center">
-  <h1>LexiScan Auto</h1>
-  <p><strong>Automated Legal Entity Extractor</strong></p>
-</div>
+# 🔍 LexiScan Auto — Automated Legal Entity Extractor
 
-## 📌 Project Overview
-**LexiScan Auto** is a sophisticated fintech/legal-tech pipeline designed to process high-volume unstructured PDF contracts. Built for law firms and fintech organizations, it replaces slow, manual entity extraction with a state-of-the-art Deep Learning Named Entity Recognition (NER) system.
-
-The pipeline combines robust Optical Character Recognition (OCR), contextual NLP models, and rule-based heuristics to reliably extract:
-*   Effective & Expiration Dates
-*   Monetary Values / Amounts
-*   Legal Jurisdictions / Governing Law
-*   Contracting Parties
-
-## 🏗 System Architecture
-1.  **Ingestion & OCR:** Processes incoming PDFs or images using `Tesseract` and `pdf2image`.
-2.  **NER Processing:** Applies a customized Spacy/TensorFlow Bi-LSTM model trained on legal terminology to extract raw entities.
-3.  **Heuristics Engine:** Refines the raw NLP output by standardizing formats (e.g., ISO 8601 Dates) and enforcing logical rules (e.g., "Expiration must be after Effective Date").
-4.  **API Delivery:** Returns structured JSON via a fully containerized `FastAPI` service.
+> An end-to-end deep learning pipeline for extracting key legal entities (dates, parties, amounts, jurisdiction) from unstructured PDF contracts using OCR + Custom NER + Rule-Based Heuristics.
 
 ---
 
-## 🚀 Quick Start - Easy Installation (Docker)
+## 📌 What Does It Do?
 
-The absolute easiest way to run the entire backend and OCR environment is using Docker. Ensure you have [Docker Desktop](https://www.docker.com/products/docker-desktop) running in the background.
+LexiScan Auto is designed for law firms and fintech organizations that need to process thousands of PDF contracts daily. It replaces slow, error-prone manual extraction with a production-ready pipeline that:
+
+- 📄 Reads scanned or digital PDF contracts via **Tesseract OCR**
+- 🧠 Extracts key entities using a **custom-trained Spacy NER model** (Bi-LSTM based)
+- 📐 Applies **rule-based heuristics** to standardize formats (ISO 8601 dates, currency cleanup) and validate logic (e.g., Expiration Date must be after Effective Date)
+- 🌐 Serves results as **structured JSON** via a **FastAPI** REST endpoint
+
+### Entities Extracted
+| Entity | Example |
+|---|---|
+| `AGREEMENT_DATE` | March 15, 2027 → `2027-03-15` |
+| `EFFECTIVE_DATE` | 04/01/2027 → `2027-04-01` |
+| `EXPIRATION_DATE` | December 31, 2029 → `2029-12-31` |
+| `PARTIES` | Nexus Cyber Solutions |
+| `AMOUNT` | $1,500,000 |
+| `GOVERNING_LAW` | State of California |
+
+---
+
+## 🏗 System Architecture
+
+```
+PDF / Image File
+      │
+      ▼
+┌─────────────────────┐
+│   OCR Engine        │  (Tesseract + pdf2image + OpenCV preprocessing)
+└────────┬────────────┘
+         │ raw text
+         ▼
+┌─────────────────────┐
+│   NER Model         │  (Custom Spacy Bi-LSTM trained on legal contracts)
+└────────┬────────────┘
+         │ raw entities
+         ▼
+┌─────────────────────┐
+│   Heuristics Engine │  (ISO 8601 dates, currency cleanup, logical validation)
+└────────┬────────────┘
+         │ clean JSON
+         ▼
+   FastAPI /extract endpoint
+```
+
+---
+
+## 🚀 Quick Start — Docker (Recommended)
+
+**Prerequisites:** [Docker Desktop](https://www.docker.com/products/docker-desktop) installed and running.
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/OmkarJadhav1307/Automated-Legal-Entity-Extractor.git
 cd Automated-Legal-Entity-Extractor
 
-# 2. Build and start the container
+# 2. Set up your environment file (REQUIRED)
+copy .env.example .env       # Windows
+cp .env.example .env         # Mac/Linux
+# Then open .env and set GOOGLE_API_KEY if you plan to run annotation scripts
+
+# 3. Build and start the server
 docker-compose up --build -d
 ```
-The server is now live! 
-*   **Swagger API Docs:** Go to http://localhost:5000/docs in your browser to interactively upload a PDF contract and see the entity extraction.
 
-To shut down the server later, simply run:
+✅ The server is now live!
+
+- **Swagger UI (Interactive):** http://localhost:5000/docs
+- **Health Check:** http://localhost:5000/
+
+To stop the server:
 ```bash
 docker-compose down
 ```
 
 ---
 
-## 💻 Manual Developer Setup (Without Docker)
-If you wish to develop locally without Docker, you must install the system requirements strictly.
+## 💻 Manual Setup (Without Docker)
 
-### 1. Install System Dependencies (Windows/Linux)
-*   **Tesseract OCR:** Requires [Tesseract Engine](https://github.com/UB-Mannheim/tesseract/wiki) installed on your system.
-*   **Poppler:** Requires [Poppler](http://blog.alivate.com.au/poppler-windows/) for PDF conversion. 
+### Step 1 — Install System Dependencies
 
-*Make sure both tools are added to your System `PATH`.*
+Install these tools **before** installing Python packages:
 
-### 2. Setup Python Environment
+| Tool | Purpose | Download |
+|---|---|---|
+| **Tesseract OCR** | Core OCR engine | [Download](https://github.com/UB-Mannheim/tesseract/wiki) |
+| **Poppler** | PDF-to-image converter | [Download (Windows)](http://blog.alivate.com.au/poppler-windows/) |
+
+> ⚠️ After installing, update the paths in your `.env` file (see Step 2).
+
+### Step 2 — Configure Environment
+
 ```bash
-# Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate       # On Linux/Mac
-venv\Scripts\activate          # On Windows
+# Copy the example config
+copy .env.example .env      # Windows
+cp .env.example .env        # Mac/Linux
+```
 
-# Install Python requirements
+Open `.env` and set the correct paths for your system:
+```env
+TESSERACT_CMD_PATH="C:\Program Files\Tesseract-OCR\tesseract.exe"
+POPPLER_PATH="C:\Program Files\poppler-24.08.0\Library\bin"
+GOOGLE_API_KEY=your_gemini_api_key_here   # Only needed for annotation scripts
+```
+
+### Step 3 — Python Environment
+
+```bash
+# Create and activate virtual environment
+python -m venv venv
+
+venv\Scripts\activate         # Windows
+source venv/bin/activate      # Mac/Linux
+
+# Install Python dependencies
 pip install -r requirements.txt
 
-# Download Spacy static base model (Required)
+# Download Spacy base model
 python -m spacy download en_core_web_sm
 ```
 
-### 3. Run the API Server
-```bash
-# Set your PYTHONPATH to the current directory
-export PYTHONPATH="."          # On Linux/Mac
-$env:PYTHONPATH="."            # On Windows (PowerShell)
+### Step 4 — Run the API Server
 
-# Start the local server
+```bash
+# Windows (PowerShell)
+$env:PYTHONPATH="."
 python src/main.py --server --port 5000
+
+# Mac/Linux
+PYTHONPATH="." python src/main.py --server --port 5000
 ```
+
+Navigate to http://localhost:5000/docs to use the API.
 
 ---
 
 ## 🧪 Running Tests
-The project contains an automated test-suite using `pytest`, including testing the OCR cleaner heuristics, and End-to-End API endpoint testing:
+
 ```bash
-python -m pytest tests/ -v
+# Windows
+$env:PYTHONPATH="."; python -m pytest tests/ -v
+
+# Mac/Linux
+PYTHONPATH="." python -m pytest tests/ -v
 ```
 
+Tests cover OCR text cleaning, heuristics validation (date standardization, logical rules), API health checks, and an end-to-end contract extraction test.
+
+---
+
 ## 📁 Directory Structure
-```text
-LexiScan2/
-├── data/                  # Contains raw synthetic contracts and processed AI doccano labels
-├── models/                # Saved legal Spacy NLP models
-├── src/                   
-│   ├── api/               # FastAPI endpoints and Inference pipeline classes
-│   ├── ocr/               # Tesseract Engine integrations and Image preprocessing
-│   └── utils/             # Heuristics rules and Loggers
-├── tests/                 # End-to-End validation scripts
-├── Dockerfile             # Container configuration
-└── docker-compose.yml     # Service manager
+
+```
+Automated-Legal-Entity-Extractor/
+│
+├── src/
+│   ├── api/
+│   │   ├── app.py                  # FastAPI app and /extract endpoint
+│   │   └── services/
+│   │       └── inference.py        # End-to-end inference pipeline (OCR → NER → Heuristics)
+│   ├── ocr/
+│   │   ├── engine.py               # Tesseract OCR wrapper for PDFs and images
+│   │   ├── preprocess.py           # OpenCV image preprocessing (grayscale, thresholding)
+│   │   └── cleaner.py              # Post-OCR text cleanup
+│   ├── utils/
+│   │   ├── heuristics.py           # Rule-based entity post-processing and validation
+│   │   └── logger.py               # Centralized application logger
+│   ├── annotate_contracts.py       # Automated annotation script (Gemini LLM + Doccano export)
+│   └── main.py                     # CLI entrypoint (--server or --file modes)
+│
+├── tests/
+│   ├── test_ocr.py                 # Unit tests for OCR text cleaner
+│   ├── test_heuristics.py          # Unit tests for rule-based heuristics
+│   ├── test_api.py                 # FastAPI endpoint tests (health check, validation)
+│   └── test_e2e.py                 # End-to-end test: uploads a real PDF, validates JSON output
+│
+├── data/
+│   ├── raw/synthetic_contracts/    # 360 synthetic legal PDF contracts for training
+│   └── processed/                  # OCR-extracted text and Spacy training binary (.spacy)
+│
+├── models/
+│   └── legalbert_lexiscan/         # Trained custom Spacy NER model (Bi-LSTM)
+│       └── model-best/
+│
+├── Dockerfile                      # Docker build instructions (Python + Tesseract + Poppler)
+├── docker-compose.yml              # Service orchestration for the API container
+├── requirements.txt                # Python package dependencies
+├── .env.example                    # Template for environment configuration
+└── .gitignore
+```
+
+---
+
+## 🔌 API Reference
+
+### `POST /extract`
+
+Upload a PDF or image file and receive extracted entities as structured JSON.
+
+**Request:**
+```bash
+curl -X POST http://localhost:5000/extract \
+  -F "file=@data/raw/synthetic_contracts/Contract_126.pdf"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "extracted_text": "SERVICE AGREEMENT\nThis Agreement is made on...",
+  "entities": [
+    {
+      "label": "EFFECTIVE_DATE",
+      "text": "April 1, 2027",
+      "standardized_value": "2027-04-01",
+      "start": 120,
+      "end": 133
+    },
+    {
+      "label": "AMOUNT",
+      "text": "$1,500,000 USD",
+      "standardized_value": "$1,500,000",
+      "start": 210,
+      "end": 224
+    }
+  ]
+}
 ```
